@@ -1,0 +1,48 @@
+name: Keepalive
+
+# GitHub disables scheduled workflows in a public repository after 60 days without
+# repository activity, which would silently stop the Friday invoice. Every week this
+# job checks the date of the last commit. From 45 days on it adds an empty commit,
+# which keeps the schedule alive, and opens an issue that mentions the owner, so
+# GitHub sends them an e-mail about it.
+
+on:
+  schedule:
+    - cron: "0 22 * * 1"   # Monday 22:00 UTC = Tuesday morning in Sydney
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Run the keepalive now, whatever the date of the last commit"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Commit and notify after 45 quiet days
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          days=$(( ($(date +%s) - $(git log -1 --format=%ct)) / 86400 ))
+          echo "Days since the last commit: $days"
+          if [ "$days" -lt 45 ] && [ "$FORCE" != "true" ]; then
+            echo "Recent activity, nothing to do."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keep scheduled workflows active ($days days without commits)"
+          git push
+          gh issue create \
+            --title "Keepalive: weekly invoice schedule kept active" \
+            --body "@$OWNER the repository had no commits for $days days. GitHub disables scheduled workflows in public repositories after 60 days without activity, so this job added an empty commit to keep the Friday invoice running.
+
+          Nothing else is needed. Optional check: **Actions → Weekly invoice** should not show a 'disabled' banner. Close this issue once read."
