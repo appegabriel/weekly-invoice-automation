@@ -1,0 +1,9 @@
+# Real personal data never goes into git: it lives in the INVOICE_CONFIG secret.
+config.yml
+out/
+__pycache__/
+.pytest_cache/
+.venv/
+*.pdf
+# Private handoff notes (contain real figures)
+START-HERE.md

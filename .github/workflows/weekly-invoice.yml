@@ -1,0 +1,40 @@
+name: Weekly invoice
+
+on:
+  schedule:
+    # Thursday 20:00 UTC = Friday 07:00 in Sydney during daylight saving (AEDT),
+    # Friday 06:00 the rest of the year (AEST). GitHub may start it a few minutes late.
+    - cron: "0 20 * * 4"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Invoice date YYYY-MM-DD (empty = today in Sydney)"
+        required: false
+      send:
+        description: "E-mail the invoice"
+        type: boolean
+        default: false
+
+jobs:
+  invoice:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Build and send invoice
+        env:
+          INVOICE_CONFIG: ${{ secrets.INVOICE_CONFIG }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SEND_MODE: ${{ vars.SEND_MODE || 'test' }}
+          INV_DATE: ${{ inputs.date }}
+          DO_SEND: ${{ github.event_name == 'schedule' || inputs.send }}
+        run: |
+          args=()
+          [ -n "$INV_DATE" ] && args+=(--date "$INV_DATE")
+          [ "$DO_SEND" = "true" ] && args+=(--send)
+          python -m invoicer "${args[@]}"

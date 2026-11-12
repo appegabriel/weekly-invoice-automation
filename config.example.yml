@@ -1,0 +1,48 @@
+# Example configuration with FAKE data.
+# Copy to config.yml for local runs (config.yml is git-ignored).
+# In GitHub Actions the real file comes from the INVOICE_CONFIG secret.
+
+supplier:
+  name: Jane Example
+  abn: "00 000 000 000"
+  address: 1 Example St, Sydney NSW 2000
+  email: jane@example.com
+  phone: "+61 400 000 000"
+
+client:
+  name: Example Client Pty Ltd
+  short_name: Example Client   # used in the PDF file name
+  abn: "00 000 000 000"
+  address: 1 Client Rd, Sydney NSW 2000
+  phone: (02) 0000 0000
+  email: accounts@example.com
+
+billing:
+  annual_salary: 52000.00     # AUD per year; weekly fee = annual / 52 (no hours, ever)
+  superannuation_rate: 0.12   # shown as its own line on the invoice
+  service_description: Office administration and operations support services
+  timezone: Australia/Sydney
+
+services_provided:
+  - Customer order entry and processing
+  - Customer service by phone and email
+
+payment:
+  account_name: Jane Example
+  bsb: "000-000"
+  account_number: "00000000"
+  terms: Due on receipt
+
+email:
+  to: [owner@example.com]       # used when SEND_MODE=live
+  cc: [jane@example.com]        # always gets a copy
+  test_to: [jane@example.com]   # used when SEND_MODE=test
+  subject: "Invoice {number} - {supplier} - {period}"
+  body: |
+    Hi,
+
+    Please find attached invoice {number} for the period {period}.
+    Total due: {total}.
+
+    Kind regards,
+    {supplier}
